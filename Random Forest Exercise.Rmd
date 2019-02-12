@@ -1,0 +1,71 @@
+---
+title: "Random Forest Exercise on Boston Dataset"
+output: html_document
+---
+```{r}
+suppressMessages(library(ipred))
+suppressMessages(library(randomForest))
+suppressMessages(library(tidyverse))
+suppressMessages(library(ggplot2))
+suppressMessages(library(tree))
+suppressMessages(library(ISLR))
+suppressMessages(library(adabag))
+suppressMessages(library(rpart))
+suppressMessages(attach(Carseats))
+library(MASS)
+```
+
+
+```{r setup, include=FALSE}
+set.seed(1000)
+
+MASS::Boston
+
+d.Bost <- dim(Boston)
+
+# Create the dataframe for train
+train = sample(d.Bost[1], d.Bost[1]/2)
+
+#Creating the Training datasets
+X.train = Boston[train, -14]
+Y.train = Boston[train, 14]
+
+#Creating the Test datasets
+X.test = Boston[-train, -14]
+Y.test = Boston[-train, 14]
+
+
+
+a = d.Bost[2] - 1
+a.squared = sqrt(a)
+a.half = a/2
+
+
+rf.boston.a = randomForest(X.train, Y.train, xtest = X.test, ytest = Y.test, 
+    mtry = a, ntree = 500)
+
+
+rf.boston.a.squared = randomForest(X.train, Y.train, xtest = X.test, ytest = Y.test, 
+    mtry = a.squared, ntree = 500)
+
+rf.boston.a.half = randomForest(X.train, Y.train, xtest = X.test, ytest = Y.test, 
+    mtry = a.half, ntree = 500)
+
+
+```
+
+```{r}
+
+plot(1:500, rf.boston.a$test$mse, col = "red", type = "l", xlab = "Tree Count", 
+    ylab = "Mean Squared Error for Test Set", main = "Plot of MSE vs Number of Trees", ylim = c(10, 19))
+lines(1:500, rf.boston.a.half$test$mse, col = "yellow", type = "l")
+
+lines(1:500, rf.boston.a.squared$test$mse, col = "orange", type = "l")
+legend("topright", c("m=p", "m=p/2", "m=sqrt(p)"), col = c("red", "yellow", "orange"), 
+    cex = 1, lty = 1)
+```
+
+
+In the case where all the variables are included we can see from the plot that the test MSE is distinctly higher. This is in comparison to the case where we take half the number variables or square root of the number of variables. From the plot we see that the MSE (Mean Squared Error) for each singular tree starts of at a high value of approximately 16. As the added number of trees increases to about 110, we see that the MSE tapers off and becomes more constant. 
+
+
