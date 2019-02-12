@@ -1,0 +1,116 @@
+---
+title: "Random Forest Exercise - Kinjal Majumdar"
+output: html_document
+---
+```{r}
+suppressMessages(library(ipred))
+suppressMessages(library(randomForest))
+suppressMessages(library(tidyverse))
+suppressMessages(library(ggplot2))
+suppressMessages(library(tree))
+suppressMessages(library(ISLR))
+suppressMessages(library(adabag))
+suppressMessages(library(rpart))
+suppressMessages(attach(Carseats))
+str(Carseats)
+```
+
+```{r setup, include=FALSE}
+Carseats <- ISLR::Carseats
+
+
+set.seed(5)
+
+seatdim <- dim(Carseats)
+
+x <- seatdim[1]
+x
+y <- seatdim[1]/2
+
+train = sample(x, y)
+Seats.train = Carseats[train, ]
+Seats.test = Carseats[-train, ]
+
+
+
+```
+```{r}
+#Tree for one variable
+tree.seats = tree(Sales ~ ., data = Seats.train)
+
+#Check summary and structure
+summary(tree.seats)
+str(tree.seats)
+
+
+```
+```{r}
+#Create a plot of the tree model 
+plot(tree.seats)
+text(tree.seats, pretty = 3, cex=0.3)
+print(tree.seats)
+
+```
+```{r}
+#Calculate Mean Squared Error
+predict <- predict(tree.seats, Seats.test)
+MSE <- mean((Seats.test$Sales-predict)^2)
+MSE
+
+```
+```{r}
+#Carry out Cross Validation
+crossval.seats = cv.tree(tree.seats, FUN = prune.tree)
+par(mfrow = c(1, 2))
+
+plot(crossval.seats$size, crossval.seats$dev)
+
+```
+```{r}
+plot(crossval.seats$k, crossval.seats$dev)
+```
+
+```{r}
+# The optimal number as seen from the plot above is at 14
+#Prune the tree
+pruned.seats = prune.tree(tree.seats, best = 14)
+plot(pruned.seats)
+text(pruned.seats, pretty = 3)
+```
+
+```{r}
+pr.predict <- predict(pruned.seats, Seats.test)
+MSE.pr <- mean((Seats.test$Sales-pr.predict)^2)
+print(MSE.pr)
+```
+
+```{r}
+
+#Carry out bagging 
+bag.seats = randomForest(Sales ~ ., data = Seats.train, mtry = 8, ntree = 310, 
+    importance = T)
+predict.bag = predict(bag.seats, Seats.test)
+MSE.bag<- mean((Seats.test$Sales - predict.bag)^2)
+MSE.bag
+```
+
+```{r}
+print(importance(bag.seats))
+```
+After carrying out Bagging, we can observe that the MSE is bettered to a value of 2.482. From the importance function we can also see that Price, ShelveLoc, CompPrice, Advertising and Age are the most important predictors for the response variable, sale.
+
+```{r}
+
+#After removing variables
+
+randf_seats = randomForest(Sales ~ ., data = Seats.train, mtry = 5, ntree = 310, 
+    importance = T)
+randf_predict = predict(randf_seats, Seats.test)
+
+MSE.removal<- mean((Seats.test$Sales - randf_predict)^2)
+MSE.removal 
+```
+```{r}
+importance(randf_seats)
+```
+From this function we can see that Price, ShelveLoc, Advertising, CompPrice, and Age are still the most important predictorsFrom the reiterated run, we see that random forest worsens the MSE on test set to 2.707 as opposed to the previous 2.482. 
